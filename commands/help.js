@@ -7,7 +7,7 @@ module.exports.run = async (bot, message, args) => {
   .setThumbnail("https://i.imgur.com/uHbGejg.png")
   .setFooter("Huskbot by: Master#4915", "https://i.imgur.com/uHbGejg.png")
   .setColor("#ffffff")
-  .addField("Komennot:", "ban\nhelp\nkick\nping\nsay\nwarn");
+  .addField("Komennot:", "ban\nclear\nhelp\nkick\nping\nsay\nwarn");
 
   message.channel.send(hEmbed);
 
