@@ -23,7 +23,7 @@ fs.readdir("./commands/", (err, files) => {
 bot.on("ready", async () => {
     console.log(`${bot.user.username} is online!`);
 
-    bot.user.setActivity("h/help | Huskcraft.net9.fi", {type: "PLAYING"});
+    bot.user.setActivity(".help | Huskcraft.net9.fi", {type: "PLAYING"});
 
 });
 
