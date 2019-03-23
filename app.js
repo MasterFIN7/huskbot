@@ -1,45 +1,61 @@
-const botconfig = require("./botconfig.json");
-const Discord = require("discord.js");
-const fs = require("fs");
-const bot = new Discord.Client({disableEveryone: true});
-bot.commands = new Discord.Collection();
-fs.readdir("./commands/", (err, files) => {
+const Discord = require('discord.js');
+const client = new Discord.Client();
+const config = require('./config.json');
+const fs = require('fs');
+const ms = require("ms");
+const moment = require('moment');
+require('./util/eventLoader')(client);
 
-  if(err) console.log(err);
+const log = message => {
+  console.log(`[${moment().format('YYYY-MM-DD HH:mm:ss')}] ${message}`);
+};
 
-  let jsfile = files.filter(f => f.split(".").pop() === "js")
-  if(jsfile.length <= 0){
-    console.log("En loydä komentoja!");
-    return;
-  }
-
-  jsfile.forEach((f, i) =>{
-    let props = require(`./commands/${f}`);
-    console.log(`${f} loaded!`);
-    bot.commands.set(props.help.name, props);
+client.commands = new Discord.Collection();
+client.aliases = new Discord.Collection();
+fs.readdir('./komennot/', (err, files) => {
+  if (err) console.error(err);
+  log(`Ladataan yhteensä ${files.length} komentoa.`);
+  files.forEach(f => {
+    let props = require(`./komennot/${f}`);
+    log(`Ladataan komentoa: ${props.help.name}.`);
+    client.commands.set(props.help.name, props);
+    props.conf.aliases.forEach(alias => {
+      client.aliases.set(alias, props.help.name);
+    });
   });
 });
 
-bot.on("ready", async () => {
-    console.log(`${bot.user.username} is online!`);
+client.reload = command => {
+  return new Promise((resolve, reject) => {
+    try {
+      delete require.cache[require.resolve(`./komennot/${command}`)];
+      let cmd = require(`./komennot/${command}`);
+      client.commands.delete(command);
+      client.aliases.forEach((cmd, alias) => {
+        if (cmd === command) client.aliases.delete(alias);
+      });
+      client.commands.set(command, cmd);
+      cmd.conf.aliases.forEach(alias => {
+        client.aliases.set(alias, cmd.help.name);
+      });
+      resolve();
+    } catch (e){
+      reject(e);
+    }
+  });
+};
 
-    bot.user.setActivity(".help | Huskcraft.net9.fi", {type: "PLAYING"});
 
+
+
+
+
+client.on('error', (e) => console.error(e));
+client.on('warn', (e) => console.warn(e));
+client.on('debug', (e) => console.info(e));
+
+process.on("unhandledRejection", err => {
+console.error("Uncaught Promise Error: \n" + err.stack);
 });
 
-bot.on("message", async message => {
-    if(message.author.bot) return;
-    if(message.channel.type === "dm") return;
-
-
-    let prefix = botconfig.prefix;
-    let messageArray = message.content.split(" ");
-    let cmd = messageArray[0];
-    let args = messageArray.slice(1);
-
-
-    let commandfile = bot.commands.get(cmd.slice(prefix.length));
-    if(commandfile) commandfile.run(bot,message,args);
-});
-
-bot.login(process.env.BOT_TOKEN);
+client.login(config.token);
